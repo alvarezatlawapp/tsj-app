@@ -306,8 +306,8 @@ export default function Table() {
         </div>
 
         {/* Table Card */}
-        <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
-          <div className="overflow-auto max-h-[600px]">
+        <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-x-hidden">
+          <div className="overflow-y-auto max-h-[600px]">
             <table className="min-w-full">
               <thead className="bg-linear-to-r from-slate-100 to-slate-50 sticky top-0 z-10 border-b border-slate-200">
                 <tr>
