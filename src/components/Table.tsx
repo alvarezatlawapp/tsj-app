@@ -40,7 +40,6 @@ export default function Table() {
   >("sala_num");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
 
-  // CAMBIO: Solo un filtro activo a la vez
   const [activeFilterType, setActiveFilterType] = useState<
     "year" | "sala" | "exp" | null
   >(null);
@@ -83,7 +82,6 @@ export default function Table() {
       setLoading(true);
       setErr(null);
 
-      // Orden por el campo del filtro activo para evitar índices compuestos
       let obField: string = orderByField as string;
       if (activeFilterType === "sala") {
         obField = "sala_num";
@@ -138,17 +136,18 @@ export default function Table() {
   const canPrev = cursorStack.length > 0;
   const canNext = !!nextCursor;
 
-  const activeFilters = [
-    activeFilterType === "year" && year && { label: "Año", value: year },
-    activeFilterType === "sala" && salaNum && { label: "Sala", value: salaNum },
-    activeFilterType === "exp" &&
-      expPrefix && { label: "Expediente", value: expPrefix },
-  ].filter(Boolean);
+  const activeFilter =
+    activeFilterType === "year" && year
+      ? { label: "Año", value: year }
+      : activeFilterType === "sala" && salaNum
+      ? { label: "Sala", value: salaNum }
+      : activeFilterType === "exp" && expPrefix
+      ? { label: "Expediente", value: expPrefix }
+      : null;
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 py-8 px-4">
+    <div className="min-h-screen bg-linear-to-br rounded-lg from-slate-50 to-slate-100 py-8 px-4">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-slate-900">
@@ -158,12 +157,6 @@ export default function Table() {
               Consulta y filtra las sentencias del Tribunal Supremo
             </p>
           </div>
-          <div className="px-4 py-2 bg-white rounded-lg shadow-sm border border-slate-200">
-            <span className="text-sm text-slate-600">Total:</span>
-            <span className="ml-2 text-lg font-semibold text-slate-900">
-              {rows.length}
-            </span>
-          </div>
         </div>
 
         <div className="bg-white rounded-xl shadow-md border border-slate-200 p-6">
@@ -171,12 +164,12 @@ export default function Table() {
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Filtrar por:
             </label>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 className={`px-4 py-2 rounded-lg font-medium transition-all ${
                   activeFilterType === "year"
                     ? "bg-blue-600 text-white shadow-md"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    : "bg-slate-100 text-white hover:bg-slate-200"
                 }`}
                 onClick={() => {
                   setActiveFilterType("year");
@@ -190,7 +183,7 @@ export default function Table() {
                 className={`px-4 py-2 rounded-lg font-medium transition-all ${
                   activeFilterType === "sala"
                     ? "bg-blue-600 text-white shadow-md"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    : "bg-slate-100 text-white hover:bg-slate-200"
                 }`}
                 onClick={() => {
                   setActiveFilterType("sala");
@@ -204,7 +197,7 @@ export default function Table() {
                 className={`px-4 py-2 rounded-lg font-medium transition-all ${
                   activeFilterType === "exp"
                     ? "bg-blue-600 text-white shadow-md"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    : "bg-slate-100 text-white hover:bg-slate-200"
                 }`}
                 onClick={() => {
                   setActiveFilterType("exp");
@@ -218,7 +211,7 @@ export default function Table() {
                 className={`px-4 py-2 rounded-lg font-medium transition-all ${
                   !activeFilterType
                     ? "bg-slate-600 text-white shadow-md"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    : "bg-slate-100 text-white hover:bg-slate-200"
                 }`}
                 onClick={() => {
                   setActiveFilterType(null);
@@ -232,47 +225,50 @@ export default function Table() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Input de Año */}
-            <div className="relative">
-              <input
-                className="w-full pl-4 pr-10 py-2.5 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition disabled:bg-slate-50 disabled:text-slate-400"
-                placeholder="Año (ej. 2009)"
-                value={year}
-                onChange={(e) => setYear(e.target.value)}
-                disabled={activeFilterType !== "year"}
-              />
-            </div>
+            {activeFilterType === "year" && (
+              <div className="relative">
+                <input
+                  className="w-full pl-4 pr-10 py-2.5 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  placeholder="Año (ej. 2009)"
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                />
+              </div>
+            )}
 
             {/* Input de Sala */}
-            <div className="relative">
-              <input
-                className="w-full pl-4 pr-10 py-2.5 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition disabled:bg-slate-50 disabled:text-slate-400"
-                placeholder="Sala num (ej. 2)"
-                value={salaNum}
-                onChange={(e) => setSalaNum(e.target.value)}
-                disabled={activeFilterType !== "sala"}
-              />
-            </div>
+            {activeFilterType === "sala" && (
+              <div className="relative">
+                <input
+                  className="w-full pl-4 pr-10 py-2.5 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  placeholder="Sala num (ej. 2)"
+                  value={salaNum}
+                  onChange={(e) => setSalaNum(e.target.value)}
+                />
+              </div>
+            )}
 
             {/* Input de Expediente */}
-            <div className="relative">
-              <input
-                className="w-full pl-4 pr-10 py-2.5 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition disabled:bg-slate-50 disabled:text-slate-400"
-                placeholder="Prefijo expediente"
-                value={expPrefix}
-                onChange={(e) => setExpPrefix(e.target.value)}
-                disabled={activeFilterType !== "exp"}
-              />
-            </div>
+            {activeFilterType === "exp" && (
+              <div className="relative">
+                <input
+                  className="w-full pl-4 pr-10 py-2.5 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  placeholder="Prefijo expediente"
+                  value={expPrefix}
+                  onChange={(e) => setExpPrefix(e.target.value)}
+                />
+              </div>
+            )}
 
+            {/* Ordenamiento */}
             <div className="flex gap-2">
               <select
-                className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition appearance-none bg-white disabled:bg-slate-50"
+                className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition appearance-none bg-white"
                 value={order}
                 onChange={(e) => setOrder(e.target.value as "asc" | "desc")}
                 aria-label="select order direction"
-                disabled={!!activeFilterType}
               >
                 <option value="desc">↓ Desc</option>
                 <option value="asc">↑ Asc</option>
@@ -287,18 +283,24 @@ export default function Table() {
             </div>
           </div>
 
-          {/* Active Filters Badges */}
-          {activeFilters.length > 0 && (
+          {/* Active Filter Badge */}
+          {activeFilter && (
             <div className="mt-4 flex flex-wrap gap-2">
               <span className="text-sm text-slate-600">Filtro activo:</span>
-              {activeFilters.map((filter) => (
-                <span
-                  key={filter.label}
-                  className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full"
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
+                {activeFilter.label}: {activeFilter.value}
+                <button
+                  onClick={() => {
+                    setActiveFilterType(null);
+                    setYear("");
+                    setSalaNum("");
+                    setExpPrefix("");
+                  }}
+                  className="hover:text-blue-900"
                 >
-                  {filter.label}: {filter.value}
-                </span>
-              ))}
+                  ✕
+                </button>
+              </span>
             </div>
           )}
         </div>
@@ -397,7 +399,6 @@ export default function Table() {
           </div>
         </div>
 
-        {/* Pagination */}
         <div className="flex items-center justify-between bg-white rounded-xl shadow-md border border-slate-200 px-6 py-4">
           <div className="flex items-center gap-3">
             <button
