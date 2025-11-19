@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   where,
   type DocumentSnapshot,
@@ -7,11 +7,11 @@ import {
 import { FirestoreService } from "../firebase/firestore";
 
 type Decision = {
-  año: string;
-  día: string;
-  expediente: string;
-  identificador: string;
-  mes: string;
+  year: string;
+  day: string;
+  exp: string;
+  id: string;
+  month: string;
   sala: string;
   sala_num: number;
   url: string;
@@ -22,30 +22,42 @@ type WithId<T> = T & { id: string };
 const COLLECTION = "sentencias";
 const PAGE_SIZE = 50;
 
+const MONTHS = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+];
+
 const tableHeaders: { label: string; field: keyof Decision | "createdAt" }[] = [
-  { label: "Año", field: "año" },
-  { label: "Mes", field: "mes" },
-  { label: "Día", field: "día" },
+  { label: "Año", field: "year" },
+  { label: "Mes", field: "month" },
+  { label: "Día", field: "day" },
   { label: "Sala", field: "sala" },
   { label: "#", field: "sala_num" },
-  { label: "Expediente", field: "expediente" },
-  { label: "Identificador", field: "identificador" },
+  { label: "Expediente", field: "exp" },
+  { label: "Identificador", field: "id" },
   { label: "URL", field: "url" },
 ];
 
 export default function Table() {
   const [rows, setRows] = useState<WithId<Decision>[]>([]);
-  const [orderByField, setOrderByField] = useState<
-    keyof Decision | "createdAt"
-  >("sala_num");
+  const orderByField = useRef<keyof Decision | "createdAt">("sala_num");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
 
-  const [activeFilterType, setActiveFilterType] = useState<
-    "year" | "sala" | "exp" | null
-  >(null);
+  // Filtros
   const [year, setYear] = useState("");
   const [salaNum, setSalaNum] = useState("");
   const [expPrefix, setExpPrefix] = useState("");
+  const [monthFilter, setMonthFilter] = useState("");
 
   const [cursorStack, setCursorStack] = useState<
     DocumentSnapshot<DocumentData>[]
@@ -57,21 +69,18 @@ export default function Table() {
 
   const constraints = useMemo(() => {
     const c = [];
-    // Solo aplicar el filtro activo
-    if (activeFilterType === "year" && year) {
-      c.push(where("año", "==", year));
-    } else if (activeFilterType === "sala" && salaNum) {
-      c.push(where("sala_num", "==", Number(salaNum)));
-    } else if (activeFilterType === "exp" && expPrefix) {
-      c.push(where("expediente", ">=", expPrefix));
-      c.push(where("expediente", "<=", expPrefix + "\uf8ff"));
+    if (year) c.push(where("year", "==", year));
+    if (salaNum) c.push(where("sala_num", "==", Number(salaNum)));
+    if (monthFilter) c.push(where("month", "==", monthFilter));
+    if (expPrefix) {
+      c.push(where("exp", ">=", expPrefix));
+      c.push(where("exp", "<=", expPrefix + "\uf8ff"));
     }
     return c;
-  }, [activeFilterType, year, salaNum, expPrefix]);
+  }, [year, salaNum, monthFilter, expPrefix]);
 
   useEffect(() => {
     void fetchPage(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderByField, order, constraints]);
 
   async function fetchPage(
@@ -82,13 +91,9 @@ export default function Table() {
       setLoading(true);
       setErr(null);
 
-      let obField: string = orderByField as string;
-      if (activeFilterType === "sala") {
-        obField = "sala_num";
-      } else if (activeFilterType === "year") {
-        obField = "año";
-      } else if (activeFilterType === "exp") {
-        obField = "expediente";
+      let obField: string = orderByField.current as string;
+      if (expPrefix) {
+        obField = "exp";
       }
 
       const { data, nextCursor } = await FirestoreService.getPaged<Decision>(
@@ -136,17 +141,27 @@ export default function Table() {
   const canPrev = cursorStack.length > 0;
   const canNext = !!nextCursor;
 
-  const activeFilter =
-    activeFilterType === "year" && year
-      ? { label: "Año", value: year }
-      : activeFilterType === "sala" && salaNum
-      ? { label: "Sala", value: salaNum }
-      : activeFilterType === "exp" && expPrefix
-      ? { label: "Expediente", value: expPrefix }
-      : null;
+  const activeFilters = [
+    year && { label: "Año", value: year, clear: () => setYear("") },
+    monthFilter && {
+      label: "Mes",
+      value: monthFilter,
+      clear: () => setMonthFilter(""),
+    },
+    salaNum && { label: "Sala", value: salaNum, clear: () => setSalaNum("") },
+    expPrefix && {
+      label: "Expediente",
+      value: expPrefix,
+      clear: () => setExpPrefix(""),
+    },
+  ].filter(Boolean) as Array<{
+    label: string;
+    value: string;
+    clear: () => void;
+  }>;
 
   return (
-    <div className="min-h-screen bg-linear-to-br rounded-lg from-slate-50 to-slate-100 py-8 px-4">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 py-8 px-4">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -160,154 +175,94 @@ export default function Table() {
         </div>
 
         <div className="bg-white rounded-xl shadow-md border border-slate-200 p-6">
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Filtrar por:
-            </label>
-            <div className="flex flex-wrap gap-2">
-              <button
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                  activeFilterType === "year"
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "bg-slate-100 text-white hover:bg-slate-200"
-                }`}
-                onClick={() => {
-                  setActiveFilterType("year");
-                  setSalaNum("");
-                  setExpPrefix("");
-                }}
-              >
-                📅 Año
-              </button>
-              <button
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                  activeFilterType === "sala"
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "bg-slate-100 text-white hover:bg-slate-200"
-                }`}
-                onClick={() => {
-                  setActiveFilterType("sala");
-                  setYear("");
-                  setExpPrefix("");
-                }}
-              >
-                #️⃣ Sala
-              </button>
-              <button
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                  activeFilterType === "exp"
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "bg-slate-100 text-white hover:bg-slate-200"
-                }`}
-                onClick={() => {
-                  setActiveFilterType("exp");
-                  setYear("");
-                  setSalaNum("");
-                }}
-              >
-                📄 Expediente
-              </button>
-              <button
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                  !activeFilterType
-                    ? "bg-slate-600 text-white shadow-md"
-                    : "bg-slate-100 text-white hover:bg-slate-200"
-                }`}
-                onClick={() => {
-                  setActiveFilterType(null);
-                  setYear("");
-                  setSalaNum("");
-                  setExpPrefix("");
-                }}
-              >
-                🔄 Sin filtro
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Input de Año */}
-            {activeFilterType === "year" && (
-              <div className="relative">
-                <input
-                  className="w-full pl-4 pr-10 py-2.5 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  placeholder="Año (ej. 2009)"
-                  value={year}
-                  onChange={(e) => setYear(e.target.value)}
-                />
-              </div>
-            )}
-
-            {/* Input de Sala */}
-            {activeFilterType === "sala" && (
-              <div className="relative">
-                <input
-                  className="w-full pl-4 pr-10 py-2.5 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  placeholder="Sala num (ej. 2)"
-                  value={salaNum}
-                  onChange={(e) => setSalaNum(e.target.value)}
-                />
-              </div>
-            )}
-
-            {/* Input de Expediente */}
-            {activeFilterType === "exp" && (
-              <div className="relative">
-                <input
-                  className="w-full pl-4 pr-10 py-2.5 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                  placeholder="Prefijo expediente"
-                  value={expPrefix}
-                  onChange={(e) => setExpPrefix(e.target.value)}
-                />
-              </div>
-            )}
-
-            {/* Ordenamiento */}
-            <div className="flex gap-2">
-              <select
-                className="flex-1 px-4 py-2.5 border border-slate-300 rounded-lg text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition appearance-none bg-white"
-                value={order}
-                onChange={(e) => setOrder(e.target.value as "asc" | "desc")}
-                aria-label="select order direction"
-              >
-                <option value="desc">↓ Desc</option>
-                <option value="asc">↑ Asc</option>
-              </select>
-              <button
-                className="px-6 py-2.5 bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium rounded-lg shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={() => fetchPage(true)}
-                disabled={loading}
-              >
-                Aplicar
-              </button>
-            </div>
-          </div>
-
-          {/* Active Filter Badge */}
-          {activeFilter && (
-            <div className="mt-4 flex flex-wrap gap-2">
-              <span className="text-sm text-slate-600">Filtro activo:</span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
-                {activeFilter.label}: {activeFilter.value}
-                <button
-                  onClick={() => {
-                    setActiveFilterType(null);
-                    setYear("");
-                    setSalaNum("");
-                    setExpPrefix("");
-                  }}
-                  className="hover:text-blue-900"
-                >
-                  ✕
-                </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="relative">
+              <input
+                className="w-full pl-4 pr-10 py-2.5 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                placeholder="Año (ej. 2009)"
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                📅
               </span>
+            </div>
+
+            <div className="relative">
+              <select
+                aria-label="Month"
+                className="w-full pl-4 pr-10 py-2.5 border cursor-pointer border-slate-300 rounded-lg bg-white text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition appearance-none"
+                value={monthFilter}
+                onChange={(e) => setMonthFilter(e.target.value)}
+              >
+                <option value="">Mes (todos)</option>
+                {MONTHS.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                🗓️
+              </span>
+            </div>
+
+            <div className="relative">
+              <input
+                className="w-full pl-4 pr-10 py-2.5 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                placeholder="Sala num (ej. 2)"
+                value={salaNum}
+                onChange={(e) => setSalaNum(e.target.value)}
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                #️⃣
+              </span>
+            </div>
+
+            <button
+              className="px-2.5 py-2.5 border border-slate-300 rounded-lg text-white hover:text-blue-300 font-medium hover:bg-slate-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white flex items-center justify-center gap-2"
+              onClick={() => setOrder(order === "asc" ? "desc" : "asc")}
+              aria-label="toggle order direction"
+            >
+              <span>{order === "desc" ? "↓" : "↑"}</span>
+              {order === "desc" ? "Descendente" : "Ascendente"}
+            </button>
+          </div>
+
+          {activeFilters.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="text-sm text-slate-600">Filtros activos:</span>
+              {activeFilters.map((filter) => (
+                <span
+                  key={filter.label}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full"
+                >
+                  {filter.label}: {filter.value}
+                  <button
+                    onClick={filter.clear}
+                    className="text-white hover:text-blue-300"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+              <button
+                onClick={() => {
+                  setYear("");
+                  setMonthFilter("");
+                  setSalaNum("");
+                  setExpPrefix("");
+                }}
+                className="text-sm text-white hover:text-blue-300 "
+              >
+                Limpiar todos
+              </button>
             </div>
           )}
         </div>
 
-        {/* Table Card */}
-        <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-x-hidden">
-          <div className="overflow-y-auto max-h-[600px]">
+        <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
+          <div className="overflow-auto max-h-[600px]">
             <table className="min-w-full">
               <thead className="bg-linear-to-r from-slate-100 to-slate-50 sticky top-0 z-10 border-b border-slate-200">
                 <tr>
@@ -359,13 +314,13 @@ export default function Table() {
                       className="hover:bg-slate-50 transition-colors duration-150"
                     >
                       <td className="px-6 py-4 text-sm text-slate-900">
-                        {r["año"]}
+                        {r.year}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-900">
-                        {r.mes}
+                        {r.month}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-900">
-                        {r["día"]}
+                        {r.day}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-900">
                         {r.sala}
@@ -376,10 +331,10 @@ export default function Table() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-sm font-mono text-slate-700">
-                        {r.expediente}
+                        {r.exp}
                       </td>
                       <td className="px-6 py-4 text-sm font-mono text-slate-600 max-w-xs truncate">
-                        {r.identificador}
+                        {r.id}
                       </td>
                       <td className="px-6 py-4">
                         <a
@@ -388,8 +343,7 @@ export default function Table() {
                           target="_blank"
                           rel="noreferrer"
                         >
-                          Ver
-                          <span className="text-xs">↗</span>
+                          Ver <span className="text-xs">↗</span>
                         </a>
                       </td>
                     </tr>
@@ -402,7 +356,7 @@ export default function Table() {
         <div className="flex items-center justify-between bg-white rounded-xl shadow-md border border-slate-200 px-6 py-4">
           <div className="flex items-center gap-3">
             <button
-              className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-white font-medium hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
+              className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-white hover:text-blue-300 font-medium hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
               disabled={!canPrev || loading}
               onClick={onPrev}
             >
@@ -410,7 +364,7 @@ export default function Table() {
               Anterior
             </button>
             <button
-              className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-white font-medium hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
+              className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-white hover:text-blue-300 font-medium hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
               disabled={!canNext || loading}
               onClick={onNext}
             >
