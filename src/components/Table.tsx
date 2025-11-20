@@ -195,7 +195,7 @@ export default function Table() {
                 value={monthFilter}
                 onChange={(e) => setMonthFilter(e.target.value)}
               >
-                <option value="">Mes (todos)</option>
+                <option value="">Mes</option>
                 {MONTHS.map((m) => (
                   <option key={m} value={m}>
                     {m}
