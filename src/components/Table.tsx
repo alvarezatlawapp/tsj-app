@@ -259,7 +259,7 @@ export default function Table() {
         </div>
 
         <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
-          <div className="overflow-auto max-h-[600px]">
+          <div className="hidden md:block overflow-x-auto max-h-[600px]">
             <table className="min-w-full">
               <thead className="bg-linear-to-r from-slate-100 to-slate-50 sticky top-0 z-10 border-b border-slate-200">
                 <tr>
@@ -347,6 +347,87 @@ export default function Table() {
                   ))}
               </tbody>
             </table>
+          </div>
+
+          <div className="md:hidden">
+            {loading && (
+              <div className="divide-y divide-slate-100">
+                {Array.from({ length: 4 }).map((_, idx) => (
+                  <div key={idx} className="p-4 space-y-3 animate-pulse">
+                    <div className="h-4 bg-slate-200 rounded w-1/3" />
+                    <div className="h-3 bg-slate-200 rounded w-2/3" />
+                    <div className="h-3 bg-slate-200 rounded w-full" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!loading && rows.length === 0 && (
+              <div className="px-4 py-8 text-center text-slate-500">
+                <div className="flex flex-col items-center gap-2">
+                  <span className="text-4xl">📋</span>
+                  <span className="text-lg font-medium">Sin resultados</span>
+                  <span className="text-sm">Intenta ajustar los filtros</span>
+                </div>
+              </div>
+            )}
+
+            {!loading && rows.length > 0 && (
+              <div className="divide-y divide-slate-100">
+                {rows.map((r) => (
+                  <article key={r.id} className="p-4 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <p className="text-xs uppercase text-slate-500">
+                          Fecha
+                        </p>
+                        <p className="text-base font-semibold text-slate-900">
+                          {r.day} de {r.month} {r.year}
+                        </p>
+                      </div>
+                      <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 text-slate-700 text-sm font-semibold">
+                        {r.sala_num}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-xs uppercase text-slate-500">
+                          Sala
+                        </p>
+                        <p className="text-slate-900">{r.sala}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase text-slate-500">
+                          Expediente
+                        </p>
+                        <p className="font-mono text-slate-700 break-all">
+                          {r.exp}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-sm">
+                      <p className="text-xs uppercase text-slate-500">
+                        Identificador
+                      </p>
+                      <p className="font-mono text-slate-600 break-all">
+                        {r.id}
+                      </p>
+                    </div>
+
+                    <a
+                      className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline transition"
+                      href={r.url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Ver sentencia <span className="text-xs">↗</span>
+                    </a>
+                  </article>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
