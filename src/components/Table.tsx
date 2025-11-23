@@ -71,7 +71,7 @@ export default function Table() {
     const c = [];
     if (year) c.push(where("year", "==", year));
     if (salaNum) c.push(where("sala_num", "==", Number(salaNum)));
-    if (monthFilter) c.push(where("month", "==", monthFilter));
+    if (monthFilter) c.push(where("month", "==", monthFilter.toLowerCase()));
     if (expPrefix) {
       c.push(where("exp", ">=", expPrefix));
       c.push(where("exp", "<=", expPrefix + "\uf8ff"));
