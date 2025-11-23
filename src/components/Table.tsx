@@ -217,7 +217,7 @@ export default function Table() {
               </span>
             </div>
             <button
-              className="px-2.5 py-2.5 border border-slate-300 rounded-lg text-white hover:text-blue-300 font-medium hover:bg-slate-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white flex items-center justify-center gap-2"
+              className="px-2.5 py-2.5 border border-slate-300 rounded-lg text-slate-900 hover:text-slate-600 font-medium hover:bg-slate-50 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-white flex items-center justify-center gap-2"
               onClick={() => setOrder(order === "asc" ? "desc" : "asc")}
               aria-label="toggle order direction"
             >
