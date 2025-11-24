@@ -37,6 +37,30 @@ const MONTHS = [
   "Diciembre",
 ];
 
+const SALA_OPTIONS = [
+  { label: "Sala Plena", value: "0" },
+  { label: "Sala Constitucional", value: "1" },
+  { label: "Sala Politico-Administrativa", value: "2" },
+  { label: "Sala Electoral", value: "3" },
+  { label: "Sala Civil", value: "4" },
+  { label: "Sala Penal", value: "5" },
+  { label: "Sala Social", value: "6" },
+  { label: "Comision Judicial", value: "7" },
+  { label: "Sala Habilitada", value: "8" },
+  { label: "Vice Presidencia", value: "9" },
+  { label: "Sala Especial Primera", value: "10" },
+  { label: "JDS - Sala Plena", value: "11" },
+  { label: "JDS - Sala Constitucional", value: "12" },
+  { label: "JDS - Sala Politico-Administrativa", value: "13" },
+  { label: "JDS - Sala Electorial", value: "14" },
+  { label: "JDS - Sala Civil", value: "15" },
+  { label: "JDS - Sala Social", value: "16" },
+  { label: "Sala Especial Segunda", value: "17" },
+  { label: "Sala Especial Primera", value: "18" },
+  { label: "Presidencia", value: "19" },
+  { label: "Sala Especial", value: "20" },
+] as const;
+
 const tableHeaders: { label: string; field: keyof Decision | "createdAt" }[] = [
   { label: "Año", field: "year" },
   { label: "Mes", field: "month" },
@@ -50,7 +74,7 @@ const tableHeaders: { label: string; field: keyof Decision | "createdAt" }[] = [
 
 export default function Table() {
   const [rows, setRows] = useState<WithId<Decision>[]>([]);
-  const orderByField = useRef<keyof Decision | "createdAt">("sala_num");
+  const orderByField = useRef<keyof Decision | "createdAt">("year");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
 
   // Filtros
@@ -140,6 +164,8 @@ export default function Table() {
 
   const canPrev = cursorStack.length > 0;
   const canNext = !!nextCursor;
+  const selectedSalaLabel =
+    SALA_OPTIONS.find((option) => option.value === salaNum)?.label ?? salaNum;
 
   const activeFilters = [
     year && { label: "Año", value: year, clear: () => setYear("") },
@@ -148,7 +174,11 @@ export default function Table() {
       value: monthFilter,
       clear: () => setMonthFilter(""),
     },
-    salaNum && { label: "Sala", value: salaNum, clear: () => setSalaNum("") },
+    salaNum && {
+      label: "Sala",
+      value: selectedSalaLabel,
+      clear: () => setSalaNum(""),
+    },
     expPrefix && {
       label: "Expediente",
       value: expPrefix,
@@ -163,15 +193,13 @@ export default function Table() {
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 py-8 px-4">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900">
-              Decisiones TSJ
-            </h1>
-            <p className="text-slate-600 mt-1">
-              Consulta y filtra las sentencias del Tribunal Supremo
-            </p>
-          </div>
+        <div className="flex flex-col items-center text-center">
+          <h1 className="text-3xl font-bold text-slate-900">
+            Decisiones TSJ
+          </h1>
+          <p className="text-slate-600 mt-1">
+            Consulta y filtra las sentencias del Tribunal Supremo
+          </p>
         </div>
 
         <div className="bg-white rounded-xl shadow-md border border-slate-200 p-6">
@@ -206,14 +234,21 @@ export default function Table() {
               </span>
             </div>
             <div className="relative">
-              <input
-                className="w-full pl-4 pr-10 py-2.5 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                placeholder="Sala num (ej. 2)"
+              <select
+                aria-label="Sala"
+                className="w-full pl-4 pr-10 py-2.5 border cursor-pointer border-slate-300 rounded-lg bg-white text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition appearance-none"
                 value={salaNum}
                 onChange={(e) => setSalaNum(e.target.value)}
-              />
+              >
+                <option value="">Sala</option>
+                {SALA_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
-                #️⃣
+                🏛️
               </span>
             </div>
             <button
@@ -434,7 +469,7 @@ export default function Table() {
         <div className="flex items-center justify-between bg-white rounded-xl shadow-md border border-slate-200 px-6 py-4">
           <div className="flex items-center gap-3">
             <button
-              className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-white hover:text-blue-300 font-medium hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
+              className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-black hover:text-blue-300 font-medium hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
               disabled={!canPrev || loading}
               onClick={onPrev}
             >
@@ -442,7 +477,7 @@ export default function Table() {
               Anterior
             </button>
             <button
-              className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-white hover:text-blue-300 font-medium hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
+              className="flex items-center gap-2 px-4 py-2 border border-slate-300 rounded-lg text-black hover:text-blue-300 font-medium hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200"
               disabled={!canNext || loading}
               onClick={onNext}
             >
